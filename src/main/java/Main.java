@@ -68,7 +68,6 @@ public class Main {
                 if (bot == null) {
                     continue;
                 }
-
                 botService.getPlayerAction().setPlayerId(bot.getId());
                 botService.computeNextPlayerAction(botService.getPlayerAction());
                 if (hubConnection.getConnectionState() == HubConnectionState.CONNECTED) {
