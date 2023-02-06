@@ -108,12 +108,12 @@ public class BotService {
             attacking = false;
         } else if (nearestPlayer.getSize() < bot.size) {
             // in this case the nearest player is a prey
-            heading = getHeadingBetween(nearestPlayer);
+            heading = headsToNearestPlayer;
             target = nearestPlayer;
             attacking = true;
         } else if (nearestFood != null) {
             // in this case the nearest player has the same size as our bot, so we chase for foods
-            heading = getHeadingBetween(nearestFood);
+            heading = headsToNearestFood;
             target = nearestFood;
             attacking = false;
         } else {
@@ -122,7 +122,7 @@ public class BotService {
 
         }
         if (goingToCentre) {
-            heading = getHeadingBetween(nearestPlayer);
+            heading = headsToNearestPlayer;
         } 
 
         return heading;
