@@ -50,11 +50,7 @@ public class BotService {
         playerAction.action = PlayerActions.FORWARD;
         playerAction.heading = new Random().nextInt(360);
 
-        if (!abON && bot.size > 25) {
-            playerAction.action = PlayerActions.START_AFTERBURNER;
-        } else if (abON && bot.size < 20) {
-            playerAction.action = PlayerActions.STOP_AFTERBURNER;
-        } else if (target == null || target == worldCenter) {
+        if (target == null || target == worldCenter) {
             playerAction.heading = findingNewTarget();
         } else {
             // decide if new target is an object or a player
@@ -93,8 +89,17 @@ public class BotService {
             target = worldCenter;
         }
 
-        if ((attacking || target == worldCenter) && bot.size > 20 && bot.torpedoSalvoCInteger > 0) {
+        if (!abON && bot.size > 25) {
+            playerAction.action = PlayerActions.START_AFTERBURNER;
+            abON = true;
+            System.out.println("AfterBurner On");
+        } else if (abON && bot.size < 20) {
+            playerAction.action = PlayerActions.STOP_AFTERBURNER;
+            abON = false;
+            System.out.println("AfterBurner Off");
+        } else if ((attacking) && bot.size > 20 && bot.torpedoSalvoCInteger > 0) {
             playerAction.action = PlayerActions.FIRE_TORPEDOES;
+            System.out.println("Firing Torpedo");
         }
         // *********************** BORDER ********************************** //
         // cek ada player atau gak di sebelahnya
