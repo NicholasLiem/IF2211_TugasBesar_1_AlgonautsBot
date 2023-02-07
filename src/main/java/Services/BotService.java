@@ -89,16 +89,16 @@ public class BotService {
             target = worldCenter;
         }
 
-        if (!abON && bot.size > 25) {
-            playerAction.action = PlayerActions.START_AFTERBURNER;
+        if (attacking && !abON && bot.size > 50) {
+            playerAction.action = PlayerActions.STARTAFTERBURNER;
             abON = true;
             System.out.println("AfterBurner On");
-        } else if (abON && bot.size < 20) {
-            playerAction.action = PlayerActions.STOP_AFTERBURNER;
+        } else if ((!attacking || bot.size < 45) && abON) {
+            playerAction.action = PlayerActions.STOPAFTERBURNER;
             abON = false;
             System.out.println("AfterBurner Off");
-        } else if ((attacking) && bot.size > 20 && bot.torpedoSalvoCInteger > 0) {
-            playerAction.action = PlayerActions.FIRE_TORPEDOES;
+        } else if ((attacking) && bot.size > 50 && bot.torpedoSalvoCInteger > 0) {
+            playerAction.action = PlayerActions.FIRETORPEDOES;
             System.out.println("Firing Torpedo");
         }
         // *********************** BORDER ********************************** //
