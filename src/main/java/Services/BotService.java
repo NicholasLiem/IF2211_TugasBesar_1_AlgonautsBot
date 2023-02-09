@@ -81,14 +81,14 @@ public class BotService {
 
         // calculating distance from world center
         var distanceFromCenter = getDistanceBetween(bot, worldCenter);
-        if (gameState.world.getRadius() == null) {
-            System.out.println("WORLD NULL");
-        }
         if ((distanceFromCenter + (1.5 * bot.size)) > gameState.world.getRadius()) {
             playerAction.heading = getHeadingBetween(worldCenter);
             target = worldCenter;
         }
 
+        if (attacking) {
+            System.out.println("ATTACKING");
+        }
         if (attacking && !abON && bot.size > 50) {
             playerAction.action = PlayerActions.STARTAFTERBURNER;
             abON = true;
