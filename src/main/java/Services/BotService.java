@@ -104,7 +104,6 @@ public class BotService {
         //     System.out.println("ACTIVATING SHIELD");
         // }
 
-        // Kasih tick buat afterburner
         if (attacking && !abON && bot.size > target.getSize() + 20) {
             playerAction.action = PlayerActions.STARTAFTERBURNER;
             abON = true;
@@ -113,7 +112,7 @@ public class BotService {
             playerAction.action = PlayerActions.STOPAFTERBURNER;
             abON = false;
             System.out.println("AfterBurner Off");
-        } else if ((attacking) && bot.size > 50 && bot.torpedoSalvoCInteger > 0) {
+        } else if ((attacking) && bot.size > 40 && bot.torpedoSalvoCInteger > 0) {
             playerAction.action = PlayerActions.FIRETORPEDOES;
             System.out.println("Firing Torpedo");
         }
@@ -184,12 +183,11 @@ public class BotService {
                 System.out.println("KE TENGAH?");
             }
 
-            if (target != null) {
             var distanceTargetFromGasClouds = getDistanceBetween(nearestGasCloud, target);
-                if (distanceTargetFromGasClouds < 10 &&
-                    Math.abs(getHeadingBetween(target) - getHeadingBetween(nearestGasCloud)) < 45) {
+                if (distanceTargetFromGasClouds < 10) {
                     heading = headsInverse(nearestGasCloud);
                     System.out.println("AWAY FROM GAS CLOUD");
+                    return heading;
                 }
                 if (target == worldCenter) {
                     if (attacking){
@@ -202,7 +200,6 @@ public class BotService {
                         }
                     }
                 return heading;
-                }
             }
             return heading;
         }
@@ -264,7 +261,9 @@ public class BotService {
             foodAndEnemyDistance > wormHoleAndEnemyDistance
         */
         
-        } else if (wormHoleAndEnemyDistance > distanceFromEnemy && nearestWormHole != null) {
+        } else if (wormHoleAndEnemyDistance > distanceFromEnemy && 
+                    nearestWormHole != null &&
+                    enemy.size > bot.size && distanceFromEnemy > 10) {
             heading = getHeadingBetween(nearestWormHole);
             System.out.println("GOING TO WORMHOLE");
         } else {
