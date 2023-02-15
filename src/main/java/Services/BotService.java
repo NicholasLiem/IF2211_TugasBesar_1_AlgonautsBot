@@ -52,7 +52,7 @@ public class BotService {
     public void computeNextPlayerAction(PlayerAction playerAction) {
         playerAction.action = PlayerActions.FORWARD;
         playerAction.heading = new Random().nextInt(360);
-
+        System.out.println("Current Tick = " + gameState.world.getCurrentTick());
         if (target == null || target == worldCenter) {
             playerAction.heading = findingNewTarget();  
         } else {
@@ -99,10 +99,21 @@ public class BotService {
             // }
 
         // Torpedo dateng
-        // if (targeted) {
-        //     playerAction.action = PlayerActions.ACTIVATESHIELD;
-        //     System.out.println("ACTIVATING SHIELD");
-        // }
+        GameObject nearestTorpedoSalvo;
+        var torpedoList = gameState.getGameObjects().stream()
+                         .filter(item -> item.getGameObjectType() == ObjectTypes.TORPEDOSALVO)
+                         .sorted(Comparator.comparing(item -> getDistanceBetween(bot, item)))
+                         .collect(Collectors.toList());
+
+        if (!torpedoList.isEmpty()) {
+            nearestTorpedoSalvo = torpedoList.get(0); 
+            if (targeted && 
+                getDistanceBetween(bot, nearestTorpedoSalvo) < 10 && 
+                bot.size > 30) {
+                playerAction.action = PlayerActions.ACTIVATESHIELD;
+                System.out.println("ACTIVATING SHIELD");
+            } 
+        }
 
         if (attacking && !abON && bot.size > target.getSize() + 20) {
             playerAction.action = PlayerActions.STARTAFTERBURNER;
@@ -263,7 +274,9 @@ public class BotService {
         
         } else if (wormHoleAndEnemyDistance > distanceFromEnemy && 
                     nearestWormHole != null &&
-                    enemy.size > bot.size && distanceFromEnemy > 10) {
+                    enemy.size > bot.size && 
+                    distanceFromEnemy < 10 && 
+                    bot.size > nearestWormHole.getSize()) {
             heading = getHeadingBetween(nearestWormHole);
             System.out.println("GOING TO WORMHOLE");
         } else {
