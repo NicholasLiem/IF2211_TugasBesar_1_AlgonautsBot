@@ -64,10 +64,10 @@ public class BotService {
         // }
         
         // calculating distance from world center
+
         var distanceFromCenter = getDistanceBetween(bot, worldCenter);
-        if ((distanceFromCenter + (1.5 * bot.size)) > gameState.world.getRadius()*7/8) {
+        if ((distanceFromCenter + (1.5 * bot.size)) > gameState.world.getRadius()*6/8) {
             System.out.println("NEAR BORDER");
-            this.attacking = false;
             this.target = worldCenter;
         }
 
@@ -94,7 +94,6 @@ public class BotService {
             nearestTorpedoSalvo = torpedoList.get(0); 
             System.out.println("THERE IS NEAREST TORPEDO");
             System.out.println("Distance BOT TO TORPEDO: " + getDistanceBetween(bot, nearestTorpedoSalvo));
-            System.out.println("Speed TORPEDO: " + nearestTorpedoSalvo.getSpeed());
             if (targeted && 
                 getDistanceBetween(bot, nearestTorpedoSalvo) < 200 && 
                 bot.size > 25) {
@@ -226,6 +225,7 @@ public class BotService {
             }
             
             if (target == worldCenter) {
+                this.attacking = false;
                 if (targeted) {
                     heading = headsFarFromAttacker(nearestPlayer, foodList, wormHoleList);
                 } else {
