@@ -64,12 +64,21 @@ public class BotService {
         optionalBot.ifPresent(bot -> this.bot = bot);
     }
 
+
+    /*
+     * Mengambil list dari objek player
+     */
+
     private List<GameObject> getPlayerList() {
         return gameState.getPlayerGameObjects().stream()
                 .filter(item -> item.getGameObjectType() == ObjectTypes.PLAYER && item.getId() != bot.id)
                 .sorted(Comparator.comparing(item -> getDistanceBetween(bot, item)))
                 .collect(Collectors.toList());
     }
+    
+    /*
+     * Mengambil list dari game object berdasarkan tipe (ot)
+     */
 
     private List<GameObject> getObjectList(ObjectTypes ot) {
         return gameState.getGameObjects()
@@ -85,6 +94,9 @@ public class BotService {
         playerAction.heading = new Random().nextInt(360);
         System.out.println("Current Tick = " + gameState.world.getCurrentTick());
 
+        /*
+         * Mekanisme menjauhi border (tetap di tengah game)
+         */
         double distanceFromCenter = getDistanceBetween(bot, worldCenter);
         if ((distanceFromCenter + (1.5 * bot.size)) > gameState.world.getRadius() * 8 / 9) {
             System.out.println("NEAR BORDER");
@@ -97,6 +109,7 @@ public class BotService {
         /*
          * Mekanisme Defense Using Shield
          */
+
         GameObject nearestTorpedoSalvo;
         List<GameObject> torpedoList = getObjectList(ObjectTypes.TORPEDOSALVO);
         if (!torpedoList.isEmpty()) {
@@ -108,25 +121,39 @@ public class BotService {
             }
         }
 
+        /*
+         * Mencari besar rata-rata player di game
+         */
+
         var playerList = getPlayerList();
         int averagePlayerSize = 0;
         if (playerList != null) {
             averagePlayerSize = findAverageSize(playerList);
         }
 
+        /*
+         * Mekanisme menembak sambil makan
+         */
         if (eating && bot.size > 40 && bot.torpedoSalvoCInteger > 0
                 || (eating && getDistanceBetween(bot, playerList.get(0)) < 50)) {
             playerAction.setHeading(getHeadingBetween(playerList.get(0)));
             playerAction.action = PlayerActions.FIRETORPEDOES;
             System.out.println("Firing Torpedo");
         }
-        if (attacking && !abON && bot.size > target.getSize() + 10
+
+        /*
+         * Mekanisme attacking dengan afterburner dan torpedo
+         */
+        
+         if (attacking && !abON && bot.size > target.getSize() + 10
                 && target.getGameObjectType() == ObjectTypes.PLAYER) {
             playerAction.action = PlayerActions.STARTAFTERBURNER;
             this.abON = true;
             System.out.println("AfterBurner On");
-        } else if ((!attacking || bot.size < 45
-                || (bot.size < target.getSize() + 10 && target.getGameObjectType() == ObjectTypes.PLAYER)) && abON) {
+        } else if ((!attacking || bot.size < 45 || 
+                    (bot.size < target.getSize() + 10 && 
+                    target.getGameObjectType() == ObjectTypes.PLAYER)) && 
+                    abON) {
             playerAction.action = PlayerActions.STOPAFTERBURNER;
             this.abON = false;
             System.out.println("AfterBurner Off");
@@ -135,13 +162,11 @@ public class BotService {
             System.out.println("Firing Torpedo");
         }
 
-        // 091205
         this.playerAction = playerAction;
     }
 
     /* Additonal Functions */
     private int findingNewTarget() {
-        // getting list of players and sorting it by distance terkecil ke terbesar
         if (!gameState.getGameObjects().isEmpty() || !gameState.getPlayerGameObjects().isEmpty()) {
             int heading;
             var playerList = getPlayerList();
@@ -149,6 +174,11 @@ public class BotService {
             var gasCloudsList = getObjectList(ObjectTypes.GASCLOUD);
             var wormHoleList = getObjectList(ObjectTypes.WORMHOLE);
             var asteroidList = getObjectList(ObjectTypes.ASTEROIDFIELD);
+
+
+            /*
+             * Cek apakah ada nearestWormHole, nearestAsteroid, nearestGasCloud, nearestFood
+             */
 
             GameObject nearestWormhole;
             if (!wormHoleList.isEmpty()) {
@@ -185,8 +215,6 @@ public class BotService {
             var nearestPlayer = playerList.get(0);
             var headsToNearestPlayer = getHeadingBetween(nearestPlayer);
             var headsToNearestFood = getHeadingBetween(nearestFood);
-            // var distanceFromFoodToGasClouds = getDistanceBetween(nearestFood,
-            // nearestGasCloud);
 
             if (target == worldCenter) {
                 this.attacking = false;
@@ -197,6 +225,10 @@ public class BotService {
                 }
             } else
 
+
+            /*
+             * Mekanisme utama untuk perubahan state, berdasarkan parameter
+             */
             if (nearestPlayer.getSize() > bot.size) {
                 this.attacking = false;
                 this.target = nearestFood;
@@ -223,6 +255,9 @@ public class BotService {
                 System.out.println("KE TENGAH?");
             }
 
+            /*
+             * Mekanisme menjauhi Gas Cloud
+             */
             double distanceTargetFromGasClouds = getDistanceBetween(nearestGasCloud, target);
             if (nearestGasCloud != null) {
                 if (distanceTargetFromGasClouds < nearestGasCloud.getSize() + 25 &&
@@ -233,6 +268,10 @@ public class BotService {
                 }
             }
 
+            /*
+             * Mekanisme menjauhi Wormhole
+             */
+
             var distanceTargetFromWormhole = getDistanceBetween(nearestWormhole, target);
             if (nearestWormhole != null) {
                 if (distanceTargetFromWormhole < nearestWormhole.getSize() + 25 &&
@@ -242,6 +281,10 @@ public class BotService {
                     return heading;
                 }
             }
+            
+            /*
+             * Mekanisme menjauhi Asteroid
+             */
 
             var distanceTargetFromAsteroid = getDistanceBetween(nearestAsteroid, target);
             if (nearestAsteroid != null) {
@@ -258,10 +301,7 @@ public class BotService {
         return getHeadingBetween(worldCenter);
     }
 
-    // calculating the direction we're heading to when there is enemy bigger and
-    // near us
     private int headsFarFromAttacker(GameObject enemy, List<GameObject> foodList, List<GameObject> wormHoleList) {
-        // int heading = 0;
         int heading;
 
         GameObject nearestFood = foodList.get(0);
@@ -288,8 +328,10 @@ public class BotService {
                 break;
             }
         }
-
-        // double foodAndEnemyDistance = getDistanceBetween(bot, nearestFood);
+        /*
+         * Mekanisme untuk menghindari musuh
+         */
+        
         if (distanceFromEnemy > enemy.speed &&
                 foodAndEnemyDistance > distanceFromEnemy &&
                 selectedFood != null && nearestFood != null) {
