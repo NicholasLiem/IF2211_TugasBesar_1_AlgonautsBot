@@ -16,6 +16,7 @@ public class BotService {
     private PlayerAction playerAction;
     private GameState gameState;
     private Boolean abON;
+    private Boolean eating;
 
     public BotService() {
         this.playerAction = new PlayerAction();
@@ -28,6 +29,7 @@ public class BotService {
         this.abON = false;
         this.targeted = false;
         this.target = worldCenter;
+        this.eating = false;
     }
 
     public GameObject getBot() {
@@ -50,22 +52,8 @@ public class BotService {
         playerAction.action = PlayerActions.FORWARD;
         playerAction.heading = new Random().nextInt(360);
         System.out.println("Current Tick = " + gameState.world.getCurrentTick());
-        
-        // if (target != null) {  
-        //     if (!gameState.getGameObjects().stream().filter(item -> item.id == target.id).collect(Collectors.toList()).isEmpty()) {
-        //         var newTarget = gameState.getGameObjects().stream().filter(item -> item.id == target.id).collect(Collectors.toList()).get(0);
-        //         target = newTarget;
-        //     } else if (!gameState.getPlayerGameObjects().stream().filter(item -> item.id == target.id)
-        //             .collect(Collectors.toList()).isEmpty()) {
-        //         var newTarget = gameState.getPlayerGameObjects().stream().filter(item -> item.id == target.id)
-        //                 .collect(Collectors.toList()).get(0);
-        //         target = newTarget;
-        //     }
-        // }
-        
-        // calculating distance from world center
 
-        var distanceFromCenter = getDistanceBetween(bot, worldCenter);
+        double distanceFromCenter = getDistanceBetween(bot, worldCenter);
         if ((distanceFromCenter + (1.5 * bot.size)) > gameState.world.getRadius()*6/8) {
             System.out.println("NEAR BORDER");
             this.target = worldCenter;
@@ -73,38 +61,33 @@ public class BotService {
 
         playerAction.heading = findingNewTarget();
 
-        // Torpedo dateng
+        /* 
+         * Mekanisme Defense Using Shield
+         */
         GameObject nearestTorpedoSalvo;
-        var torpedoList = gameState.getGameObjects().stream()
-                         .filter(item -> item.getGameObjectType() == ObjectTypes.TORPEDOSALVO)
-                         .sorted(Comparator.comparing(item -> getDistanceBetween(bot, item)))
-                         .collect(Collectors.toList());
-
-        if (attacking) {
-            System.out.println("ATTACKING");
-        }
-        if (!attacking) {
-            System.out.println("ATTACKING IS FALSE");
-        }
-        if (targeted) {
-            System.out.println("TARGETED IS TRUE");
-        }
-
+        List<GameObject> torpedoList = getObjectList(ObjectTypes.TORPEDOSALVO);
         if (!torpedoList.isEmpty()) {
             nearestTorpedoSalvo = torpedoList.get(0); 
-            System.out.println("THERE IS NEAREST TORPEDO");
-            System.out.println("Distance BOT TO TORPEDO: " + getDistanceBetween(bot, nearestTorpedoSalvo));
             if (targeted && 
-                getDistanceBetween(bot, nearestTorpedoSalvo) < 200 && 
-                bot.size > 25) {
+                getDistanceBetween(bot, nearestTorpedoSalvo) < 50 && 
+                bot.size > 30) {
                 playerAction.action = PlayerActions.ACTIVATESHIELD;
-                System.out.println("ACTIVATING SHIELD");
             } 
         }
 
-        System.out.println("APAKAH AB ON?: " + abON);
-        System.out.println("BOT SIZE SKRG: " + bot.size);
+        var playerList = getPlayerList();
+        int averagePlayerSize = 0;
+        if(playerList != null){
+            averagePlayerSize = findAverageSize(playerList);
+        }
 
+        if (eating && bot.size > 40 && bot.torpedoSalvoCInteger > 0){
+            playerAction.setHeading(getHeadingBetween(playerList.get(0)));
+            playerAction.action = PlayerActions.FIRETORPEDOES;
+            System.out.println("Firing Torpedo");
+        }
+
+        System.out.println("AVERAGE PLY SIZE: " + averagePlayerSize);
         if (attacking && !abON && bot.size > target.getSize() + 10) {
             playerAction.action = PlayerActions.STARTAFTERBURNER;
             this.abON = true;
@@ -113,10 +96,12 @@ public class BotService {
             playerAction.action = PlayerActions.STOPAFTERBURNER;
             this.abON = false;
             System.out.println("AfterBurner Off");
-        } else if ((attacking) && bot.size > 60 && bot.torpedoSalvoCInteger > 0) {
+        } else if (bot.size > 40 && bot.size >= averagePlayerSize  && bot.torpedoSalvoCInteger > 0) {
             playerAction.action = PlayerActions.FIRETORPEDOES;
             System.out.println("Firing Torpedo");
         }
+
+        // 091205
         this.playerAction = playerAction;
     }
 
@@ -124,31 +109,24 @@ public class BotService {
         // getting list of players and sorting it by distance terkecil ke terbesar
         if (!gameState.getGameObjects().isEmpty() || !gameState.getPlayerGameObjects().isEmpty()) {
             int heading;
-            var playerList = gameState.getPlayerGameObjects().stream()
-                    .filter(item -> item.getGameObjectType() == ObjectTypes.PLAYER && item.getId() != bot.id)
-                    .sorted(Comparator.comparing(item -> getDistanceBetween(bot, item)))
-                    .collect(Collectors.toList());
-            var foodList = gameState.getGameObjects()
-                    .stream().filter(item -> item.getGameObjectType() == ObjectTypes.FOOD)
-                    .sorted(Comparator
-                    .comparing(item -> getDistanceBetween(bot, item)))
-                    .collect(Collectors.toList());
-            var gasCloudsList = gameState.getGameObjects()
-                    .stream().filter(item -> item.getGameObjectType() == ObjectTypes.GASCLOUD)
-                    .sorted(Comparator
-                    .comparing(item -> getDistanceBetween(bot, item)))
-                    .collect(Collectors.toList());
-            var wormHoleList = gameState.getGameObjects()
-                    .stream().filter(item -> item.getGameObjectType() == ObjectTypes.WORMHOLE)
-                    .sorted(Comparator
-                    .comparing(item -> getDistanceBetween(bot, item)))
-                    .collect(Collectors.toList());
+            var playerList = getPlayerList();
+            var foodList = getObjectList(ObjectTypes.FOOD);
+            var gasCloudsList = getObjectList(ObjectTypes.GASCLOUD);
+            var wormHoleList = getObjectList(ObjectTypes.WORMHOLE);
+            var asteroidList = getObjectList(ObjectTypes.ASTEROIDFIELD);
             
             GameObject nearestWormhole;
             if (!wormHoleList.isEmpty()) {
                 nearestWormhole = wormHoleList.get(0);
             } else {
                 nearestWormhole = null;
+            }
+
+            GameObject nearestAsteroid;
+            if (!asteroidList.isEmpty()) {
+                nearestAsteroid = asteroidList.get(0);
+            } else {
+                nearestAsteroid = null;
             }
 
             GameObject nearestGasCloud;
@@ -175,21 +153,22 @@ public class BotService {
             // var distanceFromFoodToGasClouds = getDistanceBetween(nearestFood, nearestGasCloud);
 
             if (nearestPlayer.getSize() > bot.size) {
-                heading = headsFarFromAttacker(nearestPlayer, foodList, wormHoleList);
-                this.attacking = false;
                 this.targeted = true;
+                this.attacking = false;
+                this.target = nearestFood;
+                heading = headsFarFromAttacker(nearestPlayer, foodList, wormHoleList);
                 System.out.println("DIKEJAR MUSUH");
             } else if (nearestPlayer.getSize() < bot.size) {
-                heading = headsToNearestPlayer;
-                this.target = nearestPlayer;
-                this.attacking = true;
                 this.targeted = false;
+                this.attacking = true;
+                this.target = nearestPlayer;
+                heading = headsToNearestPlayer;
                 System.out.println("NGEJAR MUSUH");
             } else if (nearestFood != null) {
                 this.targeted = false;
-                heading = headsToNearestFood;
-                this.target = nearestFood;
                 this.attacking = false;
+                this.target = nearestFood;
+                heading = headsToNearestFood;
                 System.out.println("NYARI MAKAN");
             } else {
                 // in this case we are in empty area where there is no food or enemy, high
@@ -201,14 +180,13 @@ public class BotService {
                 System.out.println("KE TENGAH?");
             }
 
-            var distanceTargetFromGasClouds = getDistanceBetween(nearestGasCloud, target);
-            System.out.println("JARAK KE GAS CLOUD: " + distanceTargetFromGasClouds);
-            System.out.println("SIZE DARI GAS CLOUD: " + nearestGasCloud.getSize());
-            
+
+
+            double distanceTargetFromGasClouds = getDistanceBetween(nearestGasCloud, target);
             if (nearestGasCloud != null) {
-                if (distanceTargetFromGasClouds < nearestGasCloud.getSize() + 5) {
-                    System.out.println("AWAY FROM GAS CLOUD");
+                if (distanceTargetFromGasClouds < nearestGasCloud.getSize() + 25) {
                     this.attacking = false;
+                    this.targeted = false;
                     heading = headsFarFromAttacker(nearestGasCloud, foodList, wormHoleList);
                     return heading;
                 }
@@ -216,18 +194,29 @@ public class BotService {
             
             var distanceTargetFromWormhole = getDistanceBetween(nearestWormhole, target);
             if (nearestWormhole != null){
-                if (distanceTargetFromWormhole < nearestWormhole.getSize() + 10) {
-                    System.out.println("AWAY FROM WORMHOLE");
+                if (distanceTargetFromWormhole < nearestWormhole.getSize() + 25) {
                     this.attacking = false;
+                    this.targeted = false;
                     heading = headsFarFromAttacker(nearestWormhole, foodList, wormHoleList);
+                    return heading;
+                }
+            }
+
+            var distanceTargetFromAsteroid = getDistanceBetween(nearestAsteroid, target);
+            if (nearestAsteroid != null){
+                if (distanceTargetFromAsteroid < nearestAsteroid.getSize() + 24) {
+                    this.attacking = false;
+                    this.targeted = false;
+                    heading = headsFarFromAttacker(nearestAsteroid, foodList, wormHoleList);
                     return heading;
                 }
             }
             
             if (target == worldCenter) {
                 this.attacking = false;
+                this.targeted = false;
                 if (targeted) {
-                    heading = headsFarFromAttacker(nearestPlayer, foodList, wormHoleList);
+                    heading = getHeadingBetween(nearestFood);
                 } else {
                     if (nearestFood != null){
                         heading = getHeadingBetween(nearestFood);
@@ -247,10 +236,12 @@ public class BotService {
     private int headsFarFromAttacker(GameObject enemy, List<GameObject> foodList, List<GameObject> wormHoleList) {
         // int heading = 0;
         int heading;
-        var nearestFood = foodList.get(0);
+
+        GameObject nearestFood = foodList.get(0);
         if (nearestFood == null) {
             heading = headsInverse(enemy);
         }
+
         GameObject nearestWormHole;
         if (!wormHoleList.isEmpty()) {
             nearestWormHole = wormHoleList.get(0);
@@ -258,62 +249,33 @@ public class BotService {
             nearestWormHole = null;
         }
 
-        var distanceFromEnemy = getDistanceBetween(bot, enemy);
-        // var foodAndEnemyDistance = getDistanceBetween(nearestFood, enemy);
-        var wormHoleAndEnemyDistance = getDistanceBetween(nearestWormHole, enemy);
+        double distanceFromEnemy = getDistanceBetween(bot, enemy);
+        var foodAndEnemyDistance = getDistanceBetween(nearestFood, enemy);
+        double wormHoleAndEnemyDistance = getDistanceBetween(nearestWormHole, enemy);
 
-        // parameternya adalah ketika speed enemy lebih kecil daripada distance
-        // artinya si enemy gak dalam range yang bisa ngejar kita dengan cepat
-        // dan ketika distance food-nya sangat jauh dari attacker, kita bisa makan
-        // dengan menjauh secara gak langsung dari enemy yang lebih besar itu
-        
-        /* Kita akan melakukan "EATING" ketika:
-            1. Jarak Dengan Musuh > Kecepatan Musuh
-            2. Jarak Makanan dan Musuh > Jarak Bot dgn Musuh
-            3. Jarak Wormhole dan Musuh > Jarak Bot dgn Musuh
-            4. Jarak Makanan dan Musuh < Jarak Wormhole dan Musuh
-        */
-
-        /* 
-            foodAndEnemyDistance > distanceFromEnemy && 
-            wormHoleAndEnemyDistance > distanceFromEnemy && 
-            foodAndEnemyDistance < wormHoleAndEnemyDistance &&
-        */
-        // Find eligible nearfood
         GameObject selectedFood = null;
         for(GameObject food : foodList){
-            if (Math.abs(getHeadingBetween(food)-getHeadingBetween(enemy)) >= 120){
+            if (Math.abs(getHeadingBetween(food)-getHeadingBetween(enemy)) >= 180 && getDistanceBetween(food, enemy) > enemy.speed){
                 selectedFood = food;
                 break;
             }
         }
         
-        // var foodAndEnemyDistance = getDistanceBetween(bot, selectedFood);
-        if (distanceFromEnemy > enemy.speed && selectedFood != null) {
-            if (distanceFromEnemy > enemy.speed * 3){
+        // double foodAndEnemyDistance = getDistanceBetween(bot, nearestFood);
+        if (distanceFromEnemy > enemy.speed &&
+            foodAndEnemyDistance > distanceFromEnemy &&
+            selectedFood != null && nearestFood != null) {
+            if (distanceFromEnemy > 200){
                 System.out.println("Ambil makanan terdekat");
                 heading = getHeadingBetween(nearestFood);
+                this.eating = true;
             } else {
                 System.out.println("Ambil makanan yang ada di belakang bot dan enemy");
                 heading = getHeadingBetween(selectedFood);
+                this.eating = true;
             }
 
             System.out.println("EATING");
-            System.out.println("HEADING FOOD: " + getHeadingBetween(nearestFood));
-            System.out.println("HEADING ENEMY TERDEKAT: " + getHeadingBetween(enemy));
-
-        /* Kita akan melakukan pergi ke Wormhole ketika:
-            1. Jarak Dengan Musuh > Kecepatan Musuh
-            2. Jarak Makanan dan Musuh > Jarak Bot dgn Musuh
-            3. Jarak Wormhole dan Musuh > Jarak Bot dgn Musuh
-            4. Jarak Makanan dan Musuh > Jarak Wormhole dan Musuh
-        */
-        /* 
-            foodAndEnemyDistance > distanceFromEnemy && 
-            wormHoleAndEnemyDistance > distanceFromEnemy && 
-            foodAndEnemyDistance > wormHoleAndEnemyDistance
-        */
-        
         } else if (wormHoleAndEnemyDistance > distanceFromEnemy && 
                     nearestWormHole != null &&
                     enemy.size > bot.size && 
@@ -321,9 +283,13 @@ public class BotService {
                     bot.size < nearestWormHole.getSize()) {
             heading = getHeadingBetween(nearestWormHole);
             System.out.println("GOING TO WORMHOLE");
-        } else {
-            heading = headsInverse(enemy);
+            this.eating = false;
+        } else if (foodList != null && selectedFood != null) {
+            heading = getHeadingBetween(selectedFood);
             System.out.println("GOING AWAY FROM ATTACKER");
+            this.eating = false;
+        } else {
+            heading = getHeadingBetween(worldCenter);
         }
         return heading;
     }
@@ -364,6 +330,32 @@ public class BotService {
 
     private int toDegrees(double v) {
         return (int) (v * (180 / Math.PI));
+    }
+
+    private int findAverageSize(List<GameObject> gameObjects) {
+        if (gameObjects.isEmpty()) {
+            return 0;
+        }
+        int totalSize = 0;
+        for (GameObject gameObject : gameObjects) {
+            totalSize += gameObject.size;
+        }
+        return totalSize / gameObjects.size();
+    }
+
+    private List<GameObject> getPlayerList(){
+        return gameState.getPlayerGameObjects().stream()
+        .filter(item -> item.getGameObjectType() == ObjectTypes.PLAYER && item.getId() != bot.id)
+        .sorted(Comparator.comparing(item -> getDistanceBetween(bot, item)))
+        .collect(Collectors.toList());
+    }
+
+    private List<GameObject> getObjectList(ObjectTypes ot){
+        return gameState.getGameObjects()
+                    .stream().filter(item -> item.getGameObjectType() == ot)
+                    .sorted(Comparator
+                    .comparing(item -> getDistanceBetween(bot, item)))
+                    .collect(Collectors.toList());
     }
 
 }
