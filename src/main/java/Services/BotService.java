@@ -54,7 +54,7 @@ public class BotService {
         System.out.println("Current Tick = " + gameState.world.getCurrentTick());
 
         double distanceFromCenter = getDistanceBetween(bot, worldCenter);
-        if ((distanceFromCenter + (1.5 * bot.size)) > gameState.world.getRadius()*6/8) {
+        if ((distanceFromCenter + (1.5 * bot.size)) > gameState.world.getRadius()) {
             System.out.println("NEAR BORDER");
             this.target = worldCenter;
         }
@@ -86,9 +86,7 @@ public class BotService {
             playerAction.action = PlayerActions.FIRETORPEDOES;
             System.out.println("Firing Torpedo");
         }
-
-        System.out.println("AVERAGE PLY SIZE: " + averagePlayerSize);
-        if (attacking && !abON && bot.size > target.getSize() + 10) {
+        if (attacking && !abON && bot.size > target.getSize() + 10 && target.getGameObjectType() == ObjectTypes.PLAYER) {
             playerAction.action = PlayerActions.STARTAFTERBURNER;
             this.abON = true;
             System.out.println("AfterBurner On");
@@ -152,13 +150,27 @@ public class BotService {
             var headsToNearestFood = getHeadingBetween(nearestFood);
             // var distanceFromFoodToGasClouds = getDistanceBetween(nearestFood, nearestGasCloud);
 
+            if (target == worldCenter) {
+                this.attacking = false;
+                this.targeted = false;
+                if (targeted) {
+                    heading = headsFarFromAttacker(nearestPlayer, foodList, wormHoleList);
+                } else {
+                    if (nearestFood != null){
+                        heading = getHeadingBetween(nearestFood);
+                    } else {
+                        heading = getHeadingBetween(worldCenter);
+                    }
+                }
+            }
+
             if (nearestPlayer.getSize() > bot.size) {
                 this.targeted = true;
                 this.attacking = false;
                 this.target = nearestFood;
                 heading = headsFarFromAttacker(nearestPlayer, foodList, wormHoleList);
                 System.out.println("DIKEJAR MUSUH");
-            } else if (nearestPlayer.getSize() < bot.size) {
+            } else if (nearestPlayer.getSize() + 20 < bot.size) {
                 this.targeted = false;
                 this.attacking = true;
                 this.target = nearestPlayer;
@@ -184,7 +196,8 @@ public class BotService {
 
             double distanceTargetFromGasClouds = getDistanceBetween(nearestGasCloud, target);
             if (nearestGasCloud != null) {
-                if (distanceTargetFromGasClouds < nearestGasCloud.getSize() + 25) {
+                if (distanceTargetFromGasClouds < nearestGasCloud.getSize() + 25 &&
+                    Math.abs(getHeadingBetween(nearestGasCloud) - getHeadingBetween(target)) < 10) {
                     this.attacking = false;
                     this.targeted = false;
                     heading = headsFarFromAttacker(nearestGasCloud, foodList, wormHoleList);
@@ -194,7 +207,8 @@ public class BotService {
             
             var distanceTargetFromWormhole = getDistanceBetween(nearestWormhole, target);
             if (nearestWormhole != null){
-                if (distanceTargetFromWormhole < nearestWormhole.getSize() + 25) {
+                if (distanceTargetFromWormhole < nearestWormhole.getSize() + 25 &&
+                    Math.abs(getHeadingBetween(nearestWormhole) - getHeadingBetween(target)) < 10) {
                     this.attacking = false;
                     this.targeted = false;
                     heading = headsFarFromAttacker(nearestWormhole, foodList, wormHoleList);
@@ -204,7 +218,8 @@ public class BotService {
 
             var distanceTargetFromAsteroid = getDistanceBetween(nearestAsteroid, target);
             if (nearestAsteroid != null){
-                if (distanceTargetFromAsteroid < nearestAsteroid.getSize() + 24) {
+                if (distanceTargetFromAsteroid < nearestAsteroid.getSize() + 25 &&
+                    Math.abs(getHeadingBetween(nearestAsteroid) - getHeadingBetween(target)) < 10) {
                     this.attacking = false;
                     this.targeted = false;
                     heading = headsFarFromAttacker(nearestAsteroid, foodList, wormHoleList);
@@ -212,19 +227,7 @@ public class BotService {
                 }
             }
             
-            if (target == worldCenter) {
-                this.attacking = false;
-                this.targeted = false;
-                if (targeted) {
-                    heading = getHeadingBetween(nearestFood);
-                } else {
-                    if (nearestFood != null){
-                        heading = getHeadingBetween(nearestFood);
-                    } else {
-                        heading = getHeadingBetween(worldCenter);
-                    }
-                }
-            }
+            
 
             return heading;
         }
@@ -285,6 +288,7 @@ public class BotService {
             System.out.println("GOING TO WORMHOLE");
             this.eating = false;
         } else if (foodList != null && selectedFood != null) {
+            this.targeted = true;
             heading = getHeadingBetween(selectedFood);
             System.out.println("GOING AWAY FROM ATTACKER");
             this.eating = false;
