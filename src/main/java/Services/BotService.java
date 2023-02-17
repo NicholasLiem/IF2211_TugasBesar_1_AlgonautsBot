@@ -81,7 +81,7 @@ public class BotService {
             averagePlayerSize = findAverageSize(playerList);
         }
 
-        if (eating && bot.size > 40 && bot.torpedoSalvoCInteger > 0){
+        if (eating && bot.size >= averagePlayerSize && bot.size > 45 && bot.torpedoSalvoCInteger > 0){
             playerAction.setHeading(getHeadingBetween(playerList.get(0)));
             playerAction.action = PlayerActions.FIRETORPEDOES;
             System.out.println("Firing Torpedo");
@@ -197,7 +197,7 @@ public class BotService {
             double distanceTargetFromGasClouds = getDistanceBetween(nearestGasCloud, target);
             if (nearestGasCloud != null) {
                 if (distanceTargetFromGasClouds < nearestGasCloud.getSize() + 25 &&
-                    Math.abs(getHeadingBetween(nearestGasCloud) - getHeadingBetween(target)) < 10) {
+                    Math.abs(getHeadingBetween(nearestGasCloud) - getHeadingBetween(target)) < 30) {
                     this.attacking = false;
                     this.targeted = false;
                     heading = headsFarFromAttacker(nearestGasCloud, foodList, wormHoleList);
@@ -208,7 +208,7 @@ public class BotService {
             var distanceTargetFromWormhole = getDistanceBetween(nearestWormhole, target);
             if (nearestWormhole != null){
                 if (distanceTargetFromWormhole < nearestWormhole.getSize() + 25 &&
-                    Math.abs(getHeadingBetween(nearestWormhole) - getHeadingBetween(target)) < 10) {
+                    Math.abs(getHeadingBetween(nearestWormhole) - getHeadingBetween(target)) < 30) {
                     this.attacking = false;
                     this.targeted = false;
                     heading = headsFarFromAttacker(nearestWormhole, foodList, wormHoleList);
@@ -219,7 +219,7 @@ public class BotService {
             var distanceTargetFromAsteroid = getDistanceBetween(nearestAsteroid, target);
             if (nearestAsteroid != null){
                 if (distanceTargetFromAsteroid < nearestAsteroid.getSize() + 25 &&
-                    Math.abs(getHeadingBetween(nearestAsteroid) - getHeadingBetween(target)) < 10) {
+                    Math.abs(getHeadingBetween(nearestAsteroid) - getHeadingBetween(target)) < 30) {
                     this.attacking = false;
                     this.targeted = false;
                     heading = headsFarFromAttacker(nearestAsteroid, foodList, wormHoleList);
