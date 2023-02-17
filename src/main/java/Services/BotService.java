@@ -98,7 +98,7 @@ public class BotService {
          * Mekanisme menjauhi border (tetap di tengah game)
          */
         double distanceFromCenter = getDistanceBetween(bot, worldCenter);
-        if ((distanceFromCenter + (1.5 * bot.size)) > gameState.world.getRadius() * 8 / 9) {
+        if ((distanceFromCenter + (1.5 * bot.size)) > gameState.world.getRadius() * 7 / 9) {
             System.out.println("NEAR BORDER");
             this.attacking = false;
             this.target = worldCenter;
@@ -114,7 +114,7 @@ public class BotService {
         List<GameObject> torpedoList = getObjectList(ObjectTypes.TORPEDOSALVO);
         if (!torpedoList.isEmpty()) {
             nearestTorpedoSalvo = torpedoList.get(0);
-            if (targeted && getDistanceBetween(bot, nearestTorpedoSalvo) < 70 &&
+            if (targeted && getDistanceBetween(bot, nearestTorpedoSalvo) < 30 &&
                     bot.size > 30) {
                 playerAction.action = PlayerActions.ACTIVATESHIELD;
                 System.out.println("ACTIVATING SHIELD");
@@ -134,7 +134,7 @@ public class BotService {
         /*
          * Mekanisme menembak sambil makan
          */
-        if (eating && bot.size > 40 && bot.torpedoSalvoCInteger > 0
+        if (eating && bot.size > 20 && (bot.size > 40 || bot.size >= averagePlayerSize) && bot.torpedoSalvoCInteger > 0
                 || (eating && getDistanceBetween(bot, playerList.get(0)) < 50)) {
             playerAction.setHeading(getHeadingBetween(playerList.get(0)));
             playerAction.action = PlayerActions.FIRETORPEDOES;
@@ -157,7 +157,7 @@ public class BotService {
             playerAction.action = PlayerActions.STOPAFTERBURNER;
             this.abON = false;
             System.out.println("AfterBurner Off");
-        } else if (attacking && bot.size > 40 && bot.size >= averagePlayerSize && bot.torpedoSalvoCInteger > 0) {
+        } else if (attacking && bot.size > 20 && (bot.size > 40 || bot.size >= averagePlayerSize) && bot.torpedoSalvoCInteger > 0) {
             playerAction.action = PlayerActions.FIRETORPEDOES;
             System.out.println("Firing Torpedo");
         }
@@ -219,8 +219,10 @@ public class BotService {
             if (target == worldCenter) {
                 this.attacking = false;
                 if (nearestFood != null) {
+                    this.target = nearestFood;
                     heading = getHeadingBetween(nearestFood);
                 } else {
+                    this.target = nearestPlayer;
                     heading = getHeadingBetween(nearestPlayer);
                 }
             } else
@@ -229,16 +231,17 @@ public class BotService {
             /*
              * Mekanisme utama untuk perubahan state, berdasarkan parameter
              */
+
             if (nearestPlayer.getSize() > bot.size) {
                 this.attacking = false;
                 this.target = nearestFood;
-                this.targeted = false;
+                this.targeted = true;
                 heading = headsFarFromAttacker(nearestPlayer, foodList, wormHoleList);
                 System.out.println("DIKEJAR MUSUH");
             } else if (nearestPlayer.getSize() + 10 < bot.size) {
                 this.attacking = true;
                 this.target = nearestPlayer;
-                this.targeted = true;
+                this.targeted = false;
                 heading = headsToNearestPlayer;
                 System.out.println("NGEJAR MUSUH");
             } else if (nearestFood != null) {
@@ -344,7 +347,6 @@ public class BotService {
                 heading = getHeadingBetween(selectedFood);
                 this.eating = true;
             }
-
             System.out.println("EATING");
         } else if (wormHoleAndEnemyDistance > distanceFromEnemy &&
                 nearestWormHole != null &&
