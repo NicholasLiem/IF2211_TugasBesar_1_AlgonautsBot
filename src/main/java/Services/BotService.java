@@ -114,7 +114,7 @@ public class BotService {
         List<GameObject> torpedoList = getObjectList(ObjectTypes.TORPEDOSALVO);
         if (!torpedoList.isEmpty()) {
             nearestTorpedoSalvo = torpedoList.get(0);
-            if (targeted && getDistanceBetween(bot, nearestTorpedoSalvo) < 30 &&
+            if (targeted && getDistanceBetween(bot, nearestTorpedoSalvo) < 70 &&
                     bot.size > 30) {
                 playerAction.action = PlayerActions.ACTIVATESHIELD;
                 System.out.println("ACTIVATING SHIELD");
