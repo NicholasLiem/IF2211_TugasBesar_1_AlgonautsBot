@@ -58,6 +58,12 @@ public class BotService {
         updateSelfState();
     }
 
+    private void updateSelfState() {
+        Optional<GameObject> optionalBot = gameState.getPlayerGameObjects().stream()
+                .filter(gameObject -> gameObject.id.equals(bot.id)).findAny();
+        optionalBot.ifPresent(bot -> this.bot = bot);
+    }
+
     private List<GameObject> getPlayerList() {
         return gameState.getPlayerGameObjects().stream()
                 .filter(item -> item.getGameObjectType() == ObjectTypes.PLAYER && item.getId() != bot.id)
@@ -320,12 +326,6 @@ public class BotService {
 
     private int headsInverse(GameObject enemy) {
         return toDegrees(Math.atan2(enemy.position.y - bot.position.y, enemy.position.x - bot.position.x));
-    }
-
-    private void updateSelfState() {
-        Optional<GameObject> optionalBot = gameState.getPlayerGameObjects().stream()
-                .filter(gameObject -> gameObject.id.equals(bot.id)).findAny();
-        optionalBot.ifPresent(bot -> this.bot = bot);
     }
 
     private double getDistanceBetween(GameObject object1, GameObject object2) {
